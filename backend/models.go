@@ -1,6 +1,10 @@
 package main
 
-import "errors"
+import (
+	"encoding/json"
+	"os"
+	"errors"
+)
 
 type Task struct {
 	ID     int    `json:"id"`
@@ -19,4 +23,22 @@ func validateTask(t Task) error {
 		return errors.New("status inválido (use 'pending' ou 'done')")
 	}
 	return nil
+}
+
+func saveTasksToFile() error {
+	file, err := os.Create("tasks.json")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return json.NewEncoder(file).Encode(tasks)
+}
+
+func loadTasksFromFile() error {
+	file, err := os.Open("tasks.json")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return json.NewDecoder(file).Decode(&tasks)
 }
