@@ -31,3 +31,27 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(newTask)
 }
+
+// PUT /tasks/{id}
+func updateTask(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["id"])
+
+	var updated Task
+	json.NewDecoder(r.Body).Decode(&updated)
+
+	if err := validateTask(updated); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	for i, t := range tasks {
+		if t.ID == id {
+			tasks[i].Title = updated.Title
+			tasks[i].Status = updated.Status
+			json.NewEncoder(w).Encode(tasks[i])
+			return
+		}
+	}
+	http.Error(w, "tarefa não encontrada", http.StatusNotFound)
+}
