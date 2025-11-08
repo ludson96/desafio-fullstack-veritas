@@ -9,6 +9,11 @@ import (
 )
 
 func main() {
+	// 🔹 Carrega as tarefas salvas (se existir o arquivo)
+	_ = loadTasksFromFile()
+	// 🔹 Garante que as tarefas sejam salvas ao encerrar o programa
+	defer saveTasksToFile()
+
 	router := mux.NewRouter()
 
 	router.HandleFunc("/tasks", getTasks).Methods("GET")
@@ -18,7 +23,7 @@ func main() {
 
 	// Configura o CORS
 	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"}, // ou especifique seu frontend
+		AllowedOrigins:   []string{"*"}, // ou especifique o domínio do seu frontend
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type"},
 		AllowCredentials: true,
