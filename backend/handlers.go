@@ -55,3 +55,18 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Error(w, "tarefa não encontrada", http.StatusNotFound)
 }
+
+// DELETE /tasks/{id}
+func deleteTask(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["id"])
+
+	for i, t := range tasks {
+		if t.ID == id {
+			tasks = append(tasks[:i], tasks[i+1:]...)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+	http.Error(w, "tarefa não encontrada", http.StatusNotFound)
+}
