@@ -116,35 +116,35 @@ function App() {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen font-sans">
-      <div className="container mx-auto p-4 md:p-8">
-        <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">Kanban Board</h1>
+    <div className="bg-slate-100 min-h-screen font-sans text-slate-800">
+      <div className="container mx-auto max-w-7xl p-4 md:p-8">
+        <h1 className="text-4xl font-bold text-center text-slate-900 mb-10">Kanban Board</h1>
 
-        <form onSubmit={handleAddTask} className="flex justify-center gap-2 mb-8">
+        <form onSubmit={handleAddTask} className="flex justify-center gap-2 mb-10">
           <input
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
             placeholder="Nova tarefa..."
-            className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full max-w-md px-4 py-2 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
-          <button type="submit" className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+          <button type="submit" className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 transition-colors">
             Adicionar
           </button>
         </form>
 
-        {loading && <p className="text-center text-gray-500">Carregando tarefas...</p>}
+        {loading && <p className="text-center text-slate-500">Carregando tarefas...</p>}
         {error && <p className="text-center text-red-500 bg-red-100 p-2 rounded-lg">Erro: {error}</p>}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {KANBAN_COLUMNS.map(({ title, status }) => (
-            <div key={status} className="bg-gray-200 rounded-lg shadow-inner p-4">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4 pb-2 border-b-2 border-gray-300">{title}</h2>
+            <div key={status} className="bg-slate-200/80 rounded-xl shadow-inner p-4">
+              <h2 className="text-xl font-bold text-slate-700 mb-4 pb-2 border-b-2 border-slate-300">{title}</h2>
               <div className="space-y-4">
                 {tasks
                   .filter((task) => task.status === status)
                   .map((task) => (
-                    <div key={task.id} className="bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-200">
+                    <div key={task.id} className="bg-white rounded-lg p-4 shadow hover:shadow-lg transition-shadow duration-200 border border-slate-200">
                       {editingTask?.id === task.id ? (
                         <input
                           type="text"
@@ -152,25 +152,25 @@ function App() {
                           onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
                           onBlur={() => handleUpdateTask(editingTask)}
                           onKeyDown={(e) => e.key === 'Enter' && handleUpdateTask(editingTask)}
-                          className="w-full p-1 border-b-2 border-blue-500 focus:outline-none"
+                          className="w-full p-1 border-b-2 border-indigo-500 focus:outline-none"
                           autoFocus
                         />
                       ) : (
-                        <p onDoubleClick={() => setEditingTask(task)} className="text-gray-800 break-words cursor-pointer">{task.title}</p>
+                        <p onDoubleClick={() => setEditingTask(task)} className="text-slate-800 break-words cursor-pointer min-h-[24px]">{task.title}</p>
                       )}
 
-                      <div className="flex items-center gap-2 mt-4 pt-2 border-t border-gray-200">
+                      <div className="flex items-center gap-2 mt-4 pt-2 border-t border-slate-200">
                         <select
                           value={task.status}
                           onChange={(e) => handleMoveTask(task, e.target.value as Status)}
-                          className="flex-grow text-sm p-1 border border-gray-300 rounded bg-gray-50 focus:outline-none"
+                          className="flex-grow text-sm p-1 border border-slate-300 rounded bg-slate-50 focus:outline-none"
                         >
                           {KANBAN_COLUMNS.map(col => (
                             <option key={col.status} value={col.status}>{col.title}</option>
                           ))}
                         </select>
-                        <button onClick={() => setEditingTask(task)} className="text-gray-500 hover:text-blue-600 p-1 rounded-full transition-colors">✏️</button>
-                        <button onClick={() => handleDeleteTask(task.id)} className="text-gray-500 hover:text-red-600 p-1 rounded-full transition-colors">🗑️</button>
+                        <button onClick={() => setEditingTask(task)} className="text-slate-500 hover:text-indigo-600 p-1 rounded-full transition-colors">✏️</button>
+                        <button onClick={() => handleDeleteTask(task.id)} className="text-slate-500 hover:text-red-600 p-1 rounded-full transition-colors">🗑️</button>
                       </div>
                     </div>
                   ))}
