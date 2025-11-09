@@ -27,9 +27,13 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 	newTask.ID = nextID
 	nextID++
 	tasks = append(tasks, newTask)
+	if err := saveTasksToFile(); err != nil {
+		http.Error(w, "Falha ao salvar a tarefa", http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(newTask)
+	json.NewEncoder(w).Encode("Tarefa criada com sucesso")
 }
 
 // PUT /tasks/{id}
@@ -49,11 +53,15 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 		if t.ID == id {
 			tasks[i].Title = updated.Title
 			tasks[i].Status = updated.Status
+			if err := saveTasksToFile(); err != nil {
+				http.Error(w, "Falha ao salvar a tarefa atualizada", http.StatusInternalServerError)
+				return
+			}
 			json.NewEncoder(w).Encode(tasks[i])
 			return
 		}
 	}
-	http.Error(w, "tarefa não encontrada", http.StatusNotFound)
+	http.Error(w, "Tarefa não encontrada", http.StatusNotFound)
 }
 
 // DELETE /tasks/{id}
@@ -64,9 +72,13 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 	for i, t := range tasks {
 		if t.ID == id {
 			tasks = append(tasks[:i], tasks[i+1:]...)
+			if err := saveTasksToFile(); err != nil {
+				http.Error(w, "Não foi possível salvar as alterações após a exclusão", http.StatusInternalServerError)
+				return
+			}
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 	}
-	http.Error(w, "tarefa não encontrada", http.StatusNotFound)
+	http.Error(w, "Tarefa não encontrada", http.StatusNotFound)
 }

@@ -19,8 +19,8 @@ func validateTask(t Task) error {
 	if t.Title == "" {
 		return errors.New("o título é obrigatório")
 	}
-	if t.Status != "pending" && t.Status != "done" {
-		return errors.New("status inválido (use 'pending' ou 'done')")
+	if t.Status != "a fazer" && t.Status != "em progresso" && t.Status != "concluída" {
+		return errors.New("status inválido (use 'a fazer' ou 'em progresso' ou 'concluída)")
 	}
 	return nil
 }

@@ -10,9 +10,9 @@ import (
 
 func main() {
 	// 🔹 Carrega as tarefas salvas (se existir o arquivo)
-	_ = loadTasksFromFile()
-	// 🔹 Garante que as tarefas sejam salvas ao encerrar o programa
-	defer saveTasksToFile()
+	if err := loadTasksFromFile(); err != nil {
+		log.Println("Nenhum arquivo 'tasks.json' encontrado. Um novo será criado.")
+	}
 
 	router := mux.NewRouter()
 
