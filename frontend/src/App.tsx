@@ -1,6 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react'
-// Opcional: remover a importação de App.css se o arquivo for excluído
-// import './App.css' 
+import { useState, useEffect, type FormEvent } from 'react'
 
 const API_URL = 'http://localhost:8080';
 
@@ -133,7 +131,7 @@ function App() {
   };
 
   return (
-    <div className="bg-black min-h-screen font-sans text-gray-800">
+    <div className="bg-gray-50 min-h-screen font-sans text-gray-800">
       <div className="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-center text-gray-900 mb-8 sm:mb-12">Kanban Board</h1>
 
@@ -175,14 +173,14 @@ function App() {
                           autoFocus
                         />
                       ) : (
-                        <p onDoubleClick={() => setEditingTask(task)} className="text-gray-800 break-words cursor-pointer min-h-[24px]">{task.title}</p>
+                        <p onDoubleClick={() => setEditingTask(task)} className="text-gray-800 wrap-break-word cursor-pointer min-h-6">{task.title}</p>
                       )}
 
                       <div className="flex items-center gap-2 mt-4 pt-2 border-t border-gray-200">
                         <select
                           value={task.status}
                           onChange={(e) => handleMoveTask(task, e.target.value as Status)}
-                          className="flex-grow text-sm p-1 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="grow text-sm p-1 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
                           {KANBAN_COLUMNS.map(col => (
                             <option key={col.status} value={col.status}>{col.title}</option>
