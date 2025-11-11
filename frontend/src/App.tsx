@@ -40,6 +40,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
   const fetchTasks = async () => {
     try {
@@ -111,8 +112,6 @@ function App() {
   };
 
   const handleDeleteTask = async (id: number) => {
-    if (!window.confirm("Tem certeza que deseja excluir esta tarefa?")) return;
-
     try {
       const response = await fetch(`${API_URL}/tasks/${id}`, {
         method: 'DELETE',
@@ -120,6 +119,7 @@ function App() {
       if (!response.ok) {
         throw new Error('Falha ao excluir tarefa');
       }
+      setTaskToDelete(null); // Fecha o modal de confirmação
       await fetchTasks();
     } catch (err) {
       setError((err as Error).message);
@@ -163,7 +163,7 @@ function App() {
                   .filter((task) => task.status === column.status)
                   .map((task) => (
                     <div key={task.id} onClick={() => setSelectedTask(task)} className={`bg-white rounded-md p-4 shadow-sm hover:shadow-lg transition-shadow duration-200 border-t-4 cursor-pointer ${column.cardBorderClass}`}>
-                      <p className="text-gray-800 break-words">{task.title}</p>
+                      <p className="text-gray-800 wrap-break-word">{task.title}</p>
                       <div className="flex items-center gap-2 mt-4 pt-2 border-t border-gray-200">
                         <select
                           value={task.status}
@@ -175,7 +175,12 @@ function App() {
                             <option key={col.status} value={col.status}>{col.title}</option>
                           ))}
                         </select>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id) }} className="text-gray-500 hover:text-red-600 p-1 rounded-full transition-colors">🗑️</button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setTaskToDelete(task); }}
+                          className="shrink-0 px-3 py-1 text-xs font-semibold text-red-700 bg-red-100 border border-transparent rounded-md hover:bg-red-200 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-colors"
+                        >
+                          Excluir
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -187,7 +192,7 @@ function App() {
         {/* Modal de Edição de Tarefa */}
         {selectedTask && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+            className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex justify-center items-center z-50"
             onClick={() => setSelectedTask(null)} // Fecha ao clicar no fundo
           >
             <div
@@ -220,6 +225,36 @@ function App() {
                   onClick={() => handleUpdateTask(selectedTask)}
                   className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
                 >Salvar</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Confirmação de Exclusão */}
+        {taskToDelete && (
+          <div
+            className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex justify-center items-center z-50"
+            onClick={() => setTaskToDelete(null)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-md relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Confirmar Exclusão</h3>
+              <p className="text-gray-700 mb-6">
+                Tem certeza que deseja excluir a tarefa "{taskToDelete.title}"? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => setTaskToDelete(null)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleDeleteTask(taskToDelete.id)}
+                  className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition-colors"
+                >Excluir Tarefa</button>
               </div>
             </div>
           </div>
