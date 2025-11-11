@@ -8,6 +8,7 @@ interface Task {
   id: number;
   title: string;
   status: Status;
+  description?: string; // Descrição opcional
 }
 
 interface KanbanColumn {
@@ -17,7 +18,7 @@ interface KanbanColumn {
   cardBorderClass: string;
 }
 
-const KANBAN_COLUMNS: KanbanColumn[] = [
+const KANBAN_COLUMNS: readonly KanbanColumn[] = [
   {
     title: 'A Fazer',
     status: 'a fazer',
@@ -38,7 +39,7 @@ function App() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const fetchTasks = async () => {
     try {
@@ -78,7 +79,7 @@ function App() {
       const response = await fetch(`${API_URL}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTask),
+        body: JSON.stringify(newTask), // Enviar a nova tarefa com a descrição
       });
 
       if (!response.ok) {
@@ -97,12 +98,12 @@ function App() {
       const response = await fetch(`${API_URL}/tasks/${task.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: task.title, status: task.status }),
+        body: JSON.stringify({ title: task.title, status: task.status, description: task.description }),
       });
       if (!response.ok) {
         throw new Error('Falha ao atualizar tarefa');
       }
-      setEditingTask(null);
+      setSelectedTask(null);
       await fetchTasks();
     } catch (err) {
       setError((err as Error).message);
@@ -161,33 +162,20 @@ function App() {
                 {tasks
                   .filter((task) => task.status === column.status)
                   .map((task) => (
-                    <div key={task.id} className={`bg-white rounded-md p-4 shadow-sm hover:shadow-lg transition-shadow duration-200 border-t-4 ${column.cardBorderClass}`}>
-                      {editingTask?.id === task.id ? (
-                        <input
-                          type="text"
-                          value={editingTask.title}
-                          onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
-                          onBlur={() => handleUpdateTask(editingTask)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleUpdateTask(editingTask)}
-                          className="w-full p-1 border-b-2 border-blue-500 focus:outline-none"
-                          autoFocus
-                        />
-                      ) : (
-                        <p onDoubleClick={() => setEditingTask(task)} className="text-gray-800 wrap-break-word cursor-pointer min-h-6">{task.title}</p>
-                      )}
-
+                    <div key={task.id} onClick={() => setSelectedTask(task)} className={`bg-white rounded-md p-4 shadow-sm hover:shadow-lg transition-shadow duration-200 border-t-4 cursor-pointer ${column.cardBorderClass}`}>
+                      <p className="text-gray-800 break-words">{task.title}</p>
                       <div className="flex items-center gap-2 mt-4 pt-2 border-t border-gray-200">
                         <select
                           value={task.status}
-                          onChange={(e) => handleMoveTask(task, e.target.value as Status)}
+                          onClick={(e) => e.stopPropagation()} // Impede que o modal abra ao clicar no select
+                          onChange={(e) => { e.stopPropagation(); handleMoveTask(task, e.target.value as Status) }}
                           className="grow text-sm p-1 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
                           {KANBAN_COLUMNS.map(col => (
                             <option key={col.status} value={col.status}>{col.title}</option>
                           ))}
                         </select>
-                        <button onClick={() => setEditingTask(task)} className="text-gray-500 hover:text-blue-600 p-1 rounded-full transition-colors">✏️</button>
-                        <button onClick={() => handleDeleteTask(task.id)} className="text-gray-500 hover:text-red-600 p-1 rounded-full transition-colors">🗑️</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id) }} className="text-gray-500 hover:text-red-600 p-1 rounded-full transition-colors">🗑️</button>
                       </div>
                     </div>
                   ))}
@@ -195,6 +183,47 @@ function App() {
             </div>
           ))}
         </div>
+
+        {/* Modal de Edição de Tarefa */}
+        {selectedTask && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+            onClick={() => setSelectedTask(null)} // Fecha ao clicar no fundo
+          >
+            <div
+              className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-lg relative"
+              onClick={(e) => e.stopPropagation()} // Impede que o clique dentro do modal o feche
+            >
+              <button onClick={() => setSelectedTask(null)} className="absolute top-2 right-2 text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+
+              <input
+                type="text"
+                value={selectedTask.title}
+                onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
+                className="text-2xl font-bold w-full p-2 border-2 border-transparent focus:border-blue-500 rounded-md focus:outline-none"
+              />
+
+              <textarea
+                value={selectedTask.description || ''}
+                onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
+                placeholder="Adicionar uma descrição mais detalhada..."
+                rows={6}
+                className="w-full p-2 mt-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              <div className="flex justify-end gap-4 mt-6">
+                <button
+                  onClick={() => setSelectedTask(null)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
+                >Fechar</button>
+                <button
+                  onClick={() => handleUpdateTask(selectedTask)}
+                  className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+                >Salvar</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
