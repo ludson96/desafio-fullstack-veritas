@@ -1,97 +1,11 @@
-import { useState, useEffect, type FormEvent, useMemo } from 'react'
-import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent, closestCorners, useDroppable, DragOverlay, type DragStartEvent } from '@dnd-kit/core';
-import { SortableContext, useSortable, arrayMove } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
-const API_URL = 'http://localhost:8080';
-
-type Status = 'a fazer' | 'em progresso' | 'concluída';
-
-interface Task {
-  id: number;
-  title: string;
-  status: Status;
-  description?: string; // Descrição opcional
-}
-
-interface KanbanColumn {
-  title: string;
-  status: Status;
-  headerBgClass: string;
-  cardBorderClass: string;
-}
-
-const KANBAN_COLUMNS: readonly KanbanColumn[] = [
-  {
-    title: 'A Fazer',
-    status: 'a fazer',
-    headerBgClass: 'bg-blue-500',
-    cardBorderClass: 'border-t-blue-500'
-  },
-  {
-    title: 'Em Progresso',
-    status: 'em progresso',
-    headerBgClass: 'bg-amber-500',
-    cardBorderClass: 'border-t-amber-500'
-  },
-  { title: 'Concluídas', status: 'concluída', headerBgClass: 'bg-green-500', cardBorderClass: 'border-t-green-500' },
-];
-
-// Componente para a tarefa arrastável
-function SortableTask({ task, onSelect, onDelete }: { task: Task; onSelect: (task: Task) => void; onDelete: (task: Task) => void }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: task.id, data: { type: 'task', task } });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : 'auto',
-    touchAction: 'none', // Para melhor compatibilidade com dispositivos de toque
-  };
-
-  const column = KANBAN_COLUMNS.find(c => c.status === task.status);
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => onSelect(task)} className={`bg-white rounded-md p-4 shadow-sm hover:shadow-lg transition-shadow duration-200 border-t-4 cursor-grab active:cursor-grabbing ${column?.cardBorderClass}`}>
-      <p className="text-gray-800 wrap-break-word">{task.title}</p>
-      <div className="flex justify-end gap-2 mt-4 pt-2 border-t border-gray-200">
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(task); }}
-          className="shrink-0 px-3 py-1 text-xs font-semibold text-red-700 bg-red-100 border border-transparent rounded-md hover:bg-red-200 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-colors"
-        >
-          Excluir
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function KanbanColumnComponent({ column, tasks, onSelectTask, onDeleteTask }: { column: KanbanColumn; tasks: Task[]; onSelectTask: (task: Task) => void; onDeleteTask: (task: Task) => void }) {
-  const { setNodeRef } = useDroppable({ id: column.status });
-  const tasksIds = useMemo(() => tasks.map(t => t.id), [tasks]);
-
-  return (
-    <div ref={setNodeRef} className="bg-gray-100 rounded-lg shadow-md">
-      <h2 className={`text-lg font-semibold text-white p-3 rounded-t-lg ${column.headerBgClass}`}>
-        {column.title}
-      </h2>
-      <div className="p-4 space-y-4 min-h-[200px]">
-        <SortableContext items={tasksIds}>
-          {tasks.map((task) => (
-            <SortableTask key={task.id} task={task} onSelect={onSelectTask} onDelete={onDeleteTask} />
-          ))}
-        </SortableContext>
-      </div>
-    </div>
-  );
-}
+import { useState, useEffect, type FormEvent } from 'react'
+import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent, closestCorners, DragOverlay, type DragStartEvent } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
+import { getTasks, createTask, updateTask, deleteTask } from './api';
+import type { Status, Task } from './types';
+import { SortableTask } from './components/SortableTask';
+import { KanbanColumnComponent } from './components/KanbanColumnComponent';
+import { KANBAN_COLUMNS } from './constants';
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -111,11 +25,7 @@ function App() {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/tasks`);
-      if (!response.ok) {
-        throw new Error('Falha ao buscar tarefas');
-      }
-      const data = await response.json();
+      const data = await getTasks();
       setTasks(data || []);
       setError(null);
     } catch (err) {
@@ -143,15 +53,7 @@ function App() {
     };
 
     try {
-      const response = await fetch(`${API_URL}/tasks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTask),
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao criar tarefa');
-      }
+      await createTask(newTask);
       setNewTaskTitle('');
       setError(null);
       await fetchTasks();
@@ -162,14 +64,7 @@ function App() {
 
   const handleUpdateTask = async (task: Task) => {
     try {
-      const response = await fetch(`${API_URL}/tasks/${task.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: task.title, status: task.status, description: task.description }),
-      });
-      if (!response.ok) {
-        throw new Error('Falha ao atualizar tarefa');
-      }
+      await updateTask(task);
       setSelectedTask(null);
       await fetchTasks();
     } catch (err) {
@@ -179,12 +74,7 @@ function App() {
 
   const handleDeleteTask = async (id: number) => {
     try {
-      const response = await fetch(`${API_URL}/tasks/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error('Falha ao excluir tarefa');
-      }
+      await deleteTask(id);
       setTaskToDelete(null);
       await fetchTasks();
     } catch (err) {
