@@ -1,4 +1,7 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent, useMemo } from 'react'
+import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent, closestCorners, useDroppable, DragOverlay, type DragStartEvent } from '@dnd-kit/core';
+import { SortableContext, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const API_URL = 'http://localhost:8080';
 
@@ -34,13 +37,76 @@ const KANBAN_COLUMNS: readonly KanbanColumn[] = [
   { title: 'Concluídas', status: 'concluída', headerBgClass: 'bg-green-500', cardBorderClass: 'border-t-green-500' },
 ];
 
+// Componente para a tarefa arrastável
+function SortableTask({ task, onSelect, onDelete }: { task: Task; onSelect: (task: Task) => void; onDelete: (task: Task) => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id, data: { type: 'task', task } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 'auto',
+    touchAction: 'none', // Para melhor compatibilidade com dispositivos de toque
+  };
+
+  const column = KANBAN_COLUMNS.find(c => c.status === task.status);
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => onSelect(task)} className={`bg-white rounded-md p-4 shadow-sm hover:shadow-lg transition-shadow duration-200 border-t-4 cursor-grab active:cursor-grabbing ${column?.cardBorderClass}`}>
+      <p className="text-gray-800 wrap-break-word">{task.title}</p>
+      <div className="flex justify-end gap-2 mt-4 pt-2 border-t border-gray-200">
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(task); }}
+          className="shrink-0 px-3 py-1 text-xs font-semibold text-red-700 bg-red-100 border border-transparent rounded-md hover:bg-red-200 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-colors"
+        >
+          Excluir
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function KanbanColumnComponent({ column, tasks, onSelectTask, onDeleteTask }: { column: KanbanColumn; tasks: Task[]; onSelectTask: (task: Task) => void; onDeleteTask: (task: Task) => void }) {
+  const { setNodeRef } = useDroppable({ id: column.status });
+  const tasksIds = useMemo(() => tasks.map(t => t.id), [tasks]);
+
+  return (
+    <div ref={setNodeRef} className="bg-gray-100 rounded-lg shadow-md">
+      <h2 className={`text-lg font-semibold text-white p-3 rounded-t-lg ${column.headerBgClass}`}>
+        {column.title}
+      </h2>
+      <div className="p-4 space-y-4 min-h-[200px]">
+        <SortableContext items={tasksIds}>
+          {tasks.map((task) => (
+            <SortableTask key={task.id} task={task} onSelect={onSelectTask} onDelete={onDeleteTask} />
+          ))}
+        </SortableContext>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
 
   const fetchTasks = async () => {
     try {
@@ -80,7 +146,7 @@ function App() {
       const response = await fetch(`${API_URL}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTask), // Enviar a nova tarefa com a descrição
+        body: JSON.stringify(newTask),
       });
 
       if (!response.ok) {
@@ -88,7 +154,7 @@ function App() {
       }
       setNewTaskTitle('');
       setError(null);
-      await fetchTasks(); // Re-fetch to get the new task with its ID
+      await fetchTasks();
     } catch (err) {
       setError((err as Error).message);
     }
@@ -119,16 +185,69 @@ function App() {
       if (!response.ok) {
         throw new Error('Falha ao excluir tarefa');
       }
-      setTaskToDelete(null); // Fecha o modal de confirmação
+      setTaskToDelete(null);
       await fetchTasks();
     } catch (err) {
       setError((err as Error).message);
     }
   };
 
-  const handleMoveTask = (task: Task, newStatus: Status) => {
-    const updatedTask = { ...task, status: newStatus };
-    handleUpdateTask(updatedTask);
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const task = tasks.find(t => t.id === active.id);
+    if (task) {
+      setActiveTask(task);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeId = active.id;
+    const overId = over.id;
+
+    if (activeId === overId) return;
+
+    const isActiveATask = active.data.current?.type === 'task';
+
+    if (!isActiveATask) return;
+
+    const activeTask = tasks.find(t => t.id === activeId);
+    if (!activeTask) return;
+
+    const isOverAColumn = KANBAN_COLUMNS.some(c => c.status === overId);
+
+    if (isOverAColumn) {
+      if (activeTask.status !== overId) {
+        const updatedTasks = tasks.map(t =>
+          t.id === activeId ? { ...t, status: overId as Status } : t
+        );
+        setTasks(updatedTasks);
+        handleUpdateTask({ ...activeTask, status: overId as Status });
+      }
+    } else {
+      const isOverATask = over.data.current?.type === 'task';
+      if (isOverATask) {
+        const overTask = tasks.find(t => t.id === overId);
+        if (overTask && activeTask.status !== overTask.status) {
+          const updatedTasks = tasks.map(t =>
+            t.id === activeId ? { ...t, status: overTask.status } : t
+          );
+          setTasks(updatedTasks);
+          handleUpdateTask({ ...activeTask, status: overTask.status });
+        } else if (overTask && activeTask.status === overTask.status) {
+          setTasks(currentTasks => {
+            const activeIndex = currentTasks.findIndex(t => t.id === activeId);
+            const overIndex = currentTasks.findIndex(t => t.id === overId);
+            if (activeIndex === -1 || overIndex === -1) return currentTasks;
+            return arrayMove(currentTasks, activeIndex, overIndex);
+          });
+        }
+      }
+    }
+    setActiveTask(null);
   };
 
   return (
@@ -152,52 +271,40 @@ function App() {
         {loading && <p className="text-center text-gray-500">Carregando tarefas...</p>}
         {error && <p className="text-center text-red-500 bg-red-100 p-2 rounded-lg">Erro: {error}</p>}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-          {KANBAN_COLUMNS.map((column) => (
-            <div key={column.status} className="bg-gray-100 rounded-lg shadow-md">
-              <h2 className={`text-lg font-semibold text-white p-3 rounded-t-lg ${column.headerBgClass}`}>
-                {column.title}
-              </h2>
-              <div className="p-4 space-y-4 min-h-[200px]">
-                {tasks
-                  .filter((task) => task.status === column.status)
-                  .map((task) => (
-                    <div key={task.id} onClick={() => setSelectedTask(task)} className={`bg-white rounded-md p-4 shadow-sm hover:shadow-lg transition-shadow duration-200 border-t-4 cursor-pointer ${column.cardBorderClass}`}>
-                      <p className="text-gray-800 wrap-break-word">{task.title}</p>
-                      <div className="flex items-center gap-2 mt-4 pt-2 border-t border-gray-200">
-                        <select
-                          value={task.status}
-                          onClick={(e) => e.stopPropagation()} // Impede que o modal abra ao clicar no select
-                          onChange={(e) => { e.stopPropagation(); handleMoveTask(task, e.target.value as Status) }}
-                          className="grow text-sm p-1 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                          {KANBAN_COLUMNS.map(col => (
-                            <option key={col.status} value={col.status}>{col.title}</option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setTaskToDelete(task); }}
-                          className="shrink-0 px-3 py-1 text-xs font-semibold text-red-700 bg-red-100 border border-transparent rounded-md hover:bg-red-200 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-colors"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            {KANBAN_COLUMNS.map((column) => {
+              const columnTasks = tasks.filter((task) => task.status === column.status);
+              return (
+                <KanbanColumnComponent
+                  key={column.status}
+                  column={column}
+                  tasks={columnTasks}
+                  onSelectTask={setSelectedTask}
+                  onDeleteTask={setTaskToDelete}
+                />
+              );
+            })}
+          </div>
+          <DragOverlay>
+            {activeTask ? (
+              <SortableTask
+                task={activeTask}
+                onSelect={() => { }}
+                onDelete={() => { }}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
 
-        {/* Modal de Edição de Tarefa */}
         {selectedTask && (
           <div
             className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex justify-center items-center z-50"
-            onClick={() => setSelectedTask(null)} // Fecha ao clicar no fundo
+            onClick={() => setSelectedTask(null)}
           >
             <div
               className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-lg relative"
-              onClick={(e) => e.stopPropagation()} // Impede que o clique dentro do modal o feche
+              onClick={(e) => e.stopPropagation()}
             >
               <button onClick={() => setSelectedTask(null)} className="absolute top-2 right-2 text-2xl text-gray-500 hover:text-gray-800">&times;</button>
 
@@ -230,7 +337,6 @@ function App() {
           </div>
         )}
 
-        {/* Modal de Confirmação de Exclusão */}
         {taskToDelete && (
           <div
             className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm flex justify-center items-center z-50"
@@ -264,4 +370,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
