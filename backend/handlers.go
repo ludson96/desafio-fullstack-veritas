@@ -53,7 +53,7 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 		if t.ID == id {
 			tasks[i].Title = updated.Title
 			tasks[i].Status = updated.Status
-			tasks[i].Description = updated.Description // Adicione esta linha
+			tasks[i].Description = updated.Description
 			if err := saveTasksToFile(); err != nil {
 				http.Error(w, "Falha ao salvar a tarefa atualizada", http.StatusInternalServerError)
 				return

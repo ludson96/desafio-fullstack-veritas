@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	// 🔹 Carrega as tarefas salvas (se existir o arquivo)
+	// Carrega as tarefas salvas (se existir o arquivo)
 	if err := loadTasksFromFile(); err != nil {
 		log.Println("Nenhum arquivo 'tasks.json' encontrado. Um novo será criado.")
 	}
@@ -21,9 +21,9 @@ func main() {
 	router.HandleFunc("/tasks/{id}", updateTask).Methods("PUT")
 	router.HandleFunc("/tasks/{id}", deleteTask).Methods("DELETE")
 
-	// Configura o CORS
+	// Configuração do CORS
 	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"}, // ou especifique o domínio do seu frontend
+		AllowedOrigins:   []string{"*"}, 
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type"},
 		AllowCredentials: true,
