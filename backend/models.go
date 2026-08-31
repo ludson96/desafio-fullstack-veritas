@@ -7,10 +7,13 @@ import (
 )
 
 type Task struct {
-	ID     int    `json:"id"`
-	Title  string `json:"title"`
-	Status string `json:"status"`
+	ID          int    `json:"id"`
+	Title       string `json:"title"`
+	Status      string `json:"status"`
 	Description string `json:"description,omitempty"`
+	Priority    string `json:"priority,omitempty"`
+	Category    string `json:"category,omitempty"`
+	DueDate     string `json:"dueDate,omitempty"`
 }
 
 var tasks []Task
