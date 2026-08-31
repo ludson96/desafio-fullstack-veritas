@@ -11,23 +11,9 @@ O **TaskFlow** é uma aplicação completa de produtividade e gerenciamento de t
 - **Backend:** Desenvolvido em **Go (Golang)** com arquitetura RESTful limpa e modularizada, utilizando o roteador `gorilla/mux`, controle de CORS com `rs/cors`, validações e persistência de dados em arquivo `tasks.json`, acompanhado de suíte de testes unitários automatizados.
 - **Frontend:** Single Page Application (SPA) construída com **React 19**, **TypeScript** e **Vite**, estilizada com **Tailwind CSS** (design dark sólido moderno, cores contrastantes `#4F46E5` e sem dependência de gradientes artificiais) e a biblioteca **@dnd-kit** para interações fluidas e acessíveis de arrastar e soltar (drag-and-drop).
 
-## 🖼️ Tela (Preview)
+## 🖼️ Preview
 
-```
-+-------------------------------------------------------------------------------------------------------+
-|  TaskFlow  |  🔍 Buscar tarefas... (/)              [Prioridade ▾] [Categoria ▾]  [+ Criar Tarefa (N)] |
-+------------+------------------------------------------------------------------------------------------+
-|  VISÕES    |  [ Total: 12 ]       [ A Fazer: 4 ]       [ Em Andamento: 5 ]       [ Conclusão: 65% ]   |
-|  📌 Kanban |                                                                                          |
-|  📋 Lista  |  +--------------------+  +--------------------+  +--------------------+                  |
-|            |  | A FAZER        (4) |  | EM PROGRESSO   (5) |  | CONCLUÍDAS     (3) |                  |
-|  STATUS    |  +--------------------+  +--------------------+  +--------------------+                  |
-|  • Todas   |  | [Frontend] [Alta]  |  | [Backend]  [Média] |  | [Design]   [Baixa] |                  |
-|  • A Fazer |  | Criar nova rota    |  | Refatorar handlers |  | Protótipo UI Figma |                  |
-|  • Em Prog |  |                    |  |                    |  |                    |                  |
-|  • Concl.  |  +--------------------+  +--------------------+  +--------------------+                  |
-+-------------------------------------------------------------------------------------------------------+
-```
+<img src="./frontend/public/projeto.gif" alt="Demonstração do App" />
 
 ## ✨ Funcionalidades
 
