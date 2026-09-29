@@ -7,7 +7,7 @@
 [![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4.1-38B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![dnd-kit](https://img.shields.io/badge/@dnd--kit-Core%20%26%20Sortable-6366F1.svg?style=for-the-badge)](https://dndkit.com/)
 
-> 🇺🇸 [**English**](README.en.md) | 🇧🇷 [**Versão em Português**](README.md)
+> 🇺🇸 **English** | 🇧🇷 [**Versão em Português**](README.md)
 
 **TaskFlow Workspace** is a high-performance Full Stack application designed for agile project and task management with dual views (Kanban Board and List/Table view). Developed as a technical challenge solution for **Veritas Consultoria Empresarial**, the project focuses on clean architecture, strict typing, modularization, real-time KPI metrics, and smooth drag-and-drop interactions.
 
